@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CaliAlerta">
+<title>CaliAlerta</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#111;font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif;color:#f2f2f7;overflow:hidden}
+.pg{display:none;position:fixed;inset:0;overflow-y:auto;background:#111;-webkit-overflow-scrolling:touch}
+.pg.show{display:block}
+#pg-map{overflow:hidden}
+#map-el{position:fixed;inset:0;z-index:1}
+.sc{padding:16px 16px 40px}
+.safe{padding-top:max(env(safe-area-inset-top),48px)}
+.btn-big{width:100%;border:none;border-radius:20px;padding:20px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;font-family:inherit;margin-bottom:12px;text-align:left}
+.btn-back{background:rgba(28,28,30,.95);border:none;color:#f2f2f7;border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 12px rgba(0,0,0,.5)}
+.ic{width:54px;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+.card{background:#1c1c1e;border-radius:18px;padding:16px;margin-bottom:12px}
+.lbl{font-size:11px;color:#636366;text-transform:uppercase;letter-spacing:.7px;margin-bottom:9px;font-weight:600}
+.call-btn{width:100%;padding:16px;border-radius:16px;background:#30d158;color:#fff;font-size:16px;font-weight:700;border:none;cursor:pointer;font-family:inherit;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px}
+.stat-row{display:flex;gap:10px;margin-bottom:16px}
+.stat{flex:1;background:#1c1c1e;border-radius:16px;padding:14px;text-align:center}
+.chip{display:inline-block;background:#1c1c1e;border-radius:20px;padding:5px 12px;font-size:12px;color:#8e8e93;margin:3px}
+.rrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #222}
+.rrow:last-child{border-bottom:none}
+.step{display:flex;gap:10px;margin-bottom:10px;font-size:14px;line-height:1.55;color:#e5e5ea;align-items:flex-start}
+.sn{width:24px;height:24px;min-width:24px;border-radius:50%;background:rgba(255,214,10,.15);color:#ffd60a;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.xn{width:24px;height:24px;min-width:24px;border-radius:50%;background:rgba(255,69,58,.15);color:#ff453a;font-size:14px;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.spin{width:50px;height:50px;border:3px solid rgba(255,214,10,.15);border-top-color:#ffd60a;border-radius:50%;animation:sp .7s linear infinite;margin:0 auto 20px}
+@keyframes sp{to{transform:rotate(360deg)}}
+#toast{position:fixed;top:14px;left:14px;right:14px;background:#30d158;color:#fff;border-radius:16px;padding:14px;text-align:center;font-weight:700;font-size:15px;z-index:9999;display:none;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+.map-hdr{position:fixed;top:max(env(safe-area-inset-top),14px);left:14px;z-index:800;display:flex;gap:10px;align-items:center}
+.map-pill{background:rgba(17,17,17,.92);border-radius:20px;padding:8px 16px;font-size:14px;font-weight:700;color:#f2f2f7}
+.map-sheet{position:fixed;bottom:0;left:0;right:0;background:#1c1c1e;border-radius:24px 24px 0 0;padding:16px 18px 36px;border-top:1px solid #2c2c2e;z-index:800;display:none;box-shadow:0 -8px 30px rgba(0,0,0,.5)}
+.uz{background:#1c1c1e;border-radius:20px;padding:30px 20px;text-align:center;cursor:pointer;border:2px dashed #3a3a3c;margin-bottom:14px}
+input[type=file]{display:none}
+.leaflet-container{background:#1a2236!important}
+.api-box{background:#1c1c1e;border-radius:16px;padding:14px;margin-bottom:14px;border:1px solid #2c2c2e}
+.api-input{width:100%;background:#111;border:1px solid #3a3a3c;border-radius:10px;padding:11px 14px;color:#f2f2f7;font-size:14px;font-family:inherit;margin-top:8px}
+.api-input:focus{outline:none;border-color:#ffd60a}
+.err-box{background:rgba(255,69,58,.1);border:1px solid rgba(255,69,58,.3);border-radius:14px;padding:14px;margin-bottom:12px;font-size:14px;color:#ff6b6b;line-height:1.55}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<!-- HOME -->
+<div id="pg-home" class="pg show">
+  <div class="sc safe">
+    <div style="text-align:center;padding:12px 0 18px">
+      <div style="font-size:32px;font-weight:800;letter-spacing:-1.5px;color:#ffd60a">Cali<span style="color:#f2f2f7">Alerta</span></div>
+      <div style="font-size:12px;color:#636366;margin-top:4px">Infraestructura Urbana · Cali, Colombia 🇨🇴</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div id="stt" style="font-size:26px;font-weight:700;color:#ffd60a">7</div><div style="font-size:10px;color:#636366;margin-top:3px">Reportes hoy</div></div>
+      <div class="stat"><div id="stu" style="font-size:26px;font-weight:700;color:#ff453a">4</div><div style="font-size:10px;color:#636366;margin-top:3px">Urgentes</div></div>
+      <div class="stat"><div id="str" style="font-size:26px;font-weight:700;color:#30d158">2</div><div style="font-size:10px;color:#636366;margin-top:3px">Resueltos</div></div>
+    </div>
+    <button class="btn-big" onclick="go('map')" style="background:#1c1c1e;border:1.5px solid #2c2c2e">
+      <div class="ic" style="background:rgba(10,132,255,.15)">🗺️</div>
+      <div style="flex:1">
+        <div style="font-size:18px;font-weight:700;color:#f2f2f7">Ver Mapa en Vivo</div>
+        <div id="maplbl" style="font-size:13px;color:#636366;margin-top:3px">7 problemas activos en Cali</div>
+      </div>
+      <div style="font-size:24px;color:#3a3a3c">›</div>
+    </button>
+    <button class="btn-big" onclick="go('report')" style="background:#ffd60a">
+      <div class="ic" style="background:rgba(0,0,0,.12)">📸</div>
+      <div style="flex:1">
+        <div style="font-size:18px;font-weight:700;color:#111">Reportar Problema</div>
+        <div style="font-size:13px;color:rgba(0,0,0,.5);margin-top:3px">Toma una foto · IA te guía</div>
+      </div>
+      <div style="font-size:24px;color:rgba(0,0,0,.3)">›</div>
+    </button>
+    <div class="lbl" style="margin-top:8px">Reportes recientes</div>
+    <div id="rec"></div>
+  </div>
+</div>
+
+<!-- MAP -->
+<div id="pg-map" class="pg">
+  <div id="map-el"></div>
+  <div class="map-hdr">
+    <button class="btn-back" onclick="go('home')">←</button>
+    <div class="map-pill">🗺️ Cali en Vivo</div>
+  </div>
+  <div id="map-sheet" class="map-sheet">
+    <div style="width:40px;height:4px;background:#3a3a3c;border-radius:2px;margin:0 auto 16px"></div>
+    <button onclick="closeSheet()" style="position:absolute;top:16px;right:16px;background:#3a3a3c;border:none;color:#f2f2f7;border-radius:50%;width:30px;height:30px;font-size:14px;cursor:pointer;font-family:inherit">✕</button>
+    <div id="sheet-body"></div>
+  </div>
+</div>
+
+<!-- REPORT -->
+<div id="pg-report" class="pg">
+  <div class="sc safe">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <button class="btn-back" onclick="go('home')" style="position:static;box-shadow:none;background:#1c1c1e">←</button>
+      <span style="font-size:18px;font-weight:700">Reportar Problema</span>
+    </div>
+    <div style="background:#1c1c1e;border-radius:14px;padding:13px;font-size:13px;color:#8e8e93;line-height:1.65;border-left:3px solid #0a84ff;margin-bottom:14px">
+      🔐 Modo Vercel seguro: la API Key se configura como variable de entorno y no aparece en el navegador.
+    </div>
+
+    <div style="background:#1c1c1e;border-radius:14px;padding:13px;font-size:13px;color:#8e8e93;line-height:1.65;border-left:3px solid #0a84ff;margin-bottom:14px">
+      📡 Toma una foto del problema. La IA detecta qué es y te dice exactamente a quién llamar en Cali.
+    </div>
+
+    <div class="uz" id="uz" onclick="document.getElementById('fin').click()">
+      <div id="uph">
+        <div style="font-size:48px;margin-bottom:12px">📷</div>
+        <div style="font-size:17px;font-weight:700;color:#f2f2f7">Seleccionar Foto</div>
+        <div style="font-size:13px;color:#636366;margin-top:6px">Toca para abrir galería o cámara</div>
+      </div>
+      <div id="upv" style="display:none">
+        <img id="pimg" src="" alt="" style="max-width:100%;max-height:220px;border-radius:14px;object-fit:cover">
+        <div style="font-size:15px;color:#30d158;margin-top:12px;font-weight:700">✓ Lista para analizar</div>
+      </div>
+    </div>
+    <input type="file" id="fin" accept="image/*" capture="environment" onchange="handleFile(this)">
+    <button id="abtn" onclick="doAnalyze()" disabled style="width:100%;padding:18px;border-radius:18px;background:#ffd60a;color:#111;font-size:18px;font-weight:700;border:none;cursor:pointer;opacity:.35;font-family:inherit;margin-bottom:14px">🔍 Analizar con IA</button>
+
+    <div class="lbl">Problemas que detecto</div>
+    <div id="chips" style="display:flex;flex-wrap:wrap"></div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="pg-loading" class="pg">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px;text-align:center">
+    <div style="font-size:54px;margin-bottom:20px">🔍</div>
+    <div class="spin"></div>
+    <div style="font-size:22px;font-weight:700;color:#f2f2f7;margin-bottom:10px">Analizando imagen...</div>
+    <div style="font-size:15px;color:#636366;line-height:1.7;max-width:280px">La IA identifica el problema y busca la entidad responsable en Cali</div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="pg-result" class="pg">
+  <div class="sc safe">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <button class="btn-back" onclick="go('report')" style="position:static;box-shadow:none;background:#1c1c1e">←</button>
+      <span style="font-size:18px;font-weight:700">Resultado del Análisis</span>
+    </div>
+    <div id="rbody"></div>
+  </div>
+</div>
+
+<script>
+var PT={
+  arbol:      {e:'🌳',n:'Árbol Caído / Poda',     ent:'DAGMA',                    tel:'880-5050', u:'MEDIA'},
+  incendio:   {e:'🔥',n:'Incendio',               ent:'Bomberos Cali',             tel:'119',      u:'ALTA'},
+  electrico:  {e:'⚡',n:'Falla Eléctrica',         ent:'EMCALI (Energía)',          tel:'116',      u:'ALTA'},
+  semaforo:   {e:'🚦',n:'Semáforo Dañado',         ent:'Secretaría de Movilidad',  tel:'444-2000', u:'BAJA'},
+  via:        {e:'🛣️',n:'Vía Dañada / Hueco',      ent:'Sec. Infraestructura',     tel:'883-7474', u:'MEDIA'},
+  inundacion: {e:'💧',n:'Inundación',              ent:'Bomberos Cali',             tel:'119',      u:'ALTA'},
+  puente:     {e:'🌉',n:'Puente en Riesgo',        ent:'Sec. Infraestructura',     tel:'883-7474', u:'ALTA'},
+  acueducto:  {e:'🚰',n:'Fuga de Agua / Alcantarilla', ent:'EMCALI (Acueducto)',  tel:'116',      u:'MEDIA'},
+  gas:        {e:'💨',n:'Fuga de Gas',             ent:'Gases de Occidente',        tel:'164',      u:'ALTA'},
+  construccion:{e:'🏗️',n:'Construcción Peligrosa', ent:'Planeación Municipal',     tel:'620-0000', u:'MEDIA'},
+  choque:     {e:'🚗',n:'Accidente de Tránsito',  ent:'Policía de Tránsito',       tel:'127',      u:'ALTA'},
+  cable:      {e:'🔌',n:'Cable Caído / Chispa',   ent:'EMCALI (Energía)',          tel:'116',      u:'ALTA'},
+  basura:     {e:'🗑️',n:'Acumulación de Basura',  ent:'Ciudad Limpia (EMSIRVA)',   tel:'880-5050', u:'BAJA'},
+  otro:       {e:'⚠️',n:'Otro Problema',           ent:'Línea de Emergencias',      tel:'123',      u:'MEDIA'}
+};
+var UC={ALTA:'#ff453a',MEDIA:'#ffd60a',BAJA:'#30d158'};
+var UB={ALTA:'rgba(255,69,58,.15)',MEDIA:'rgba(255,214,10,.12)',BAJA:'rgba(48,209,88,.15)'};
+var reps=[
+  {id:1,lat:3.4695,lng:-76.5282,type:'arbol',     addr:'Av. 6N con Calle 34',        time:'Hace 2 h'},
+  {id:2,lat:3.4355,lng:-76.5390,type:'semaforo',  addr:'Av. Roosevelt con Calle 5',  time:'Hace 1 h'},
+  {id:3,lat:3.4812,lng:-76.5198,type:'via',       addr:'Calle 70 con Cra. 1',        time:'Hace 3 h'},
+  {id:4,lat:3.4600,lng:-76.5450,type:'inundacion',addr:'Barrio Salomia',             time:'Hace 30 min'},
+  {id:5,lat:3.4516,lng:-76.5320,type:'electrico', addr:'Calle 12 con Cra. 9',        time:'Hace 15 min'},
+  {id:6,lat:3.3953,lng:-76.5320,type:'puente',    addr:'Puente de Nápoles',          time:'Hace 5 h'},
+  {id:7,lat:3.4900,lng:-76.5100,type:'acueducto', addr:'Barrio El Limonar',          time:'Hace 45 min'}
+];
+var mapInst=null,mkrs=[],imgData=null,imgMime=null,aiRes=null;
+
+var SYSTEM_PROMPT=`Eres un experto en infraestructura urbana de Cali, Colombia. Tu trabajo es analizar fotos de problemas de infraestructura y determinar exactamente qué es y a qué entidad de Cali hay que llamar.
+
+ANALIZA LA IMAGEN y clasifícala en uno de estos tipos:
+- arbol → árbol caído, rama caída, árbol inclinado, poda urgente → DAGMA: 880-5050
+- incendio → fuego, humo, llamas → Bomberos Cali: 119
+- electrico → poste dañado, transformador, cableado eléctrico roto → EMCALI Energía: 116
+- cable → cable caído al piso, cable tirando chispa, cable de luz suelto → EMCALI Energía: 116
+- semaforo → semáforo dañado, apagado, mal → Secretaría de Movilidad Cali: 444-2000
+- via → hueco en carretera, vía dañada, bache, pavimento roto → Secretaría de Infraestructura: 883-7474
+- inundacion → calle inundada, agua acumulada, desbordamiento → Bomberos Cali: 119
+- puente → puente dañado, grietas en puente, puente en riesgo → Secretaría de Infraestructura: 883-7474
+- acueducto → fuga de agua potable, tubería rota, alcantarilla rota → EMCALI Acueducto: 116
+- gas → olor a gas, fuga de gas, tubería de gas → Gases de Occidente: 164
+- construccion → construcción ilegal peligrosa, andamio mal puesto → Planeación Municipal: 620-0000
+- choque → accidente de tránsito, carros chocados → Policía de Tránsito: 127
+- basura → acumulación enorme de basura, escombros ilegales → EMSIRVA: 880-5050
+- otro → cualquier otro problema urbano → Emergencias: 123
+
+Responde ÚNICAMENTE con este JSON, sin texto adicional, sin backticks, sin markdown:
+{"tipo":"[el tipo exacto de la lista]","emoji":"[emoji que represente el problema]","nombre":"[nombre corto del problema, ej: Árbol Caído, Cable Tirando Chispa, Hueco en Vía]","descripcion":"[descripción de 1-2 oraciones de lo que ves en la imagen específicamente]","urgencia":"ALTA|MEDIA|BAJA","riesgoVida":true|false,"accionInmediata":"[qué debe hacer el ciudadano AHORA MISMO en 1 oración concreta]","entidad":"[nombre completo de la entidad]","telefono":"[número de teléfono]","pasos":["paso 1 concreto","paso 2 concreto","paso 3 concreto"],"evitar":["cosa concreta a no hacer 1","cosa concreta a no hacer 2"]}`;
+
+function checkReady(){
+  var b=document.getElementById('abtn');
+  var ready=!!imgData;
+  b.disabled=!ready;
+  b.style.opacity=ready?'1':'.35';
+}
+
+function go(s){
+  document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('show')});
+  document.getElementById('pg-'+s).classList.add('show');
+  window.scrollTo(0,0);
+  if(s==='home'){renderRec();updateStats()}
+  if(s==='map'){setTimeout(buildMap,60)}
+  if(s==='report'){renderChips();var b=document.getElementById('abtn');b.disabled=!imgData;b.style.opacity=imgData?'1':'.35'}
+}
+
+function showToast(m,c){
+  var t=document.getElementById('toast');t.textContent=m;t.style.background=c||'#30d158';t.style.display='block';
+  setTimeout(function(){t.style.display='none'},3000);
+}
+
+function buildMap(){
+  var el=document.getElementById('map-el');
+  el.style.position='fixed';el.style.inset='0';el.style.zIndex='1';
+  if(mapInst){mapInst.invalidateSize();return}
+  mapInst=L.map('map-el',{center:[3.4516,-76.5320],zoom:13,zoomControl:false});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://openstreetmap.org">OpenStreetMap</a>'}).addTo(mapInst);
+  L.control.zoom({position:'bottomright'}).addTo(mapInst);
+  placeMarkers();
+  setTimeout(function(){mapInst.invalidateSize()},300);
+}
+
+function markerHTML(t){
+  var col=UC[t.u];
+  return '<div style="position:relative;width:44px;height:52px;filter:drop-shadow(0 3px 8px rgba(0,0,0,.5))">' +
+    '<svg width="44" height="52" viewBox="0 0 44 52" xmlns="http://www.w3.org/2000/svg">' +
+    '<path d="M22 2C12.06 2 4 10.06 4 20c0 13.5 18 30 18 30S40 33.5 40 20C40 10.06 31.94 2 22 2z" fill="'+col+'"/>' +
+    '</svg>' +
+    '<div style="position:absolute;top:4px;left:4px;width:36px;height:36px;border-radius:50%;background:#111;display:flex;align-items:center;justify-content:center;font-size:18px">'+t.e+'</div>' +
+  '</div>';
+}
+
+function placeMarkers(){
+  mkrs.forEach(function(m){m.remove()});mkrs=[];
+  reps.forEach(function(r){
+    var t=PT[r.type]||PT.otro;
+    var ic=L.divIcon({html:markerHTML(t),className:'',iconSize:[44,52],iconAnchor:[22,52]});
+    var m=L.marker([r.lat,r.lng],{icon:ic}).addTo(mapInst);
+    m.on('click',function(){openSheet(r)});
+    mkrs.push(m);
+  });
+}
+
+function openSheet(r){
+  var t=PT[r.type]||PT.otro;
+  document.getElementById('sheet-body').innerHTML=
+    '<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">'+
+      '<span style="font-size:36px">'+t.e+'</span>'+
+      '<div style="flex:1"><div style="font-size:18px;font-weight:700;color:#f2f2f7">'+t.n+'</div>'+
+      '<div style="font-size:13px;color:#8e8e93;margin-top:2px">'+r.addr+' · '+r.time+'</div></div>'+
+      '<span style="padding:5px 12px;border-radius:20px;background:'+UB[t.u]+';color:'+UC[t.u]+';font-size:12px;font-weight:700">'+t.u+'</span>'+
+    '</div>'+
+    '<div style="font-size:13px;color:#8e8e93;margin-bottom:14px">Responsable: <strong style="color:#f2f2f7">'+t.ent+'</strong></div>'+
+    '<button class="call-btn" onclick="window.location.href=\'tel:'+t.tel.replace(/[-\s]/g,'')+'\'">📞 Llamar '+t.ent+' · '+t.tel+'</button>';
+  document.getElementById('map-sheet').style.display='block';
+}
+function closeSheet(){document.getElementById('map-sheet').style.display='none'}
+
+function handleFile(inp){
+  var f=inp.files[0];if(!f)return;
+  imgMime=f.type;
+  var rd=new FileReader();
+  rd.onload=function(ev){
+    imgData=ev.target.result.split(',')[1];
+    document.getElementById('uph').style.display='none';
+    document.getElementById('upv').style.display='block';
+    document.getElementById('pimg').src=ev.target.result;
+    document.getElementById('uz').style.borderColor='#30d158';
+    checkReady();
+  };
+  rd.readAsDataURL(f);
+}
+
+function doAnalyze(){
+  if(!imgData){showToast('⚠️ Selecciona una imagen primero','#ff453a');return}
+  go('loading');
+  fetch('/api/analyze',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({image:imgData,mime:imgMime})
+  }).then(function(r){
+    return r.json().then(function(d){return {ok:r.ok,status:r.status,data:d}});
+  }).then(function(out){
+    if(!out.ok || out.data.error){
+      renderError(out.data.error || 'Error al analizar la imagen');
+      go('result');return;
+    }
+    aiRes=out.data;
+    renderResult(aiRes);
+    go('result');
+  }).catch(function(e){
+    renderError('Error de conexión: '+e.message+'. Verifica la configuración en Vercel.');
+    go('result');
+  });
+}
+
+function renderError(msg){
+  document.getElementById('rbody').innerHTML=
+    '<div class="err-box">'+
+      '<div style="font-size:16px;font-weight:700;margin-bottom:8px">❌ Error al analizar</div>'+
+      '<div>'+msg+'</div>'+
+      '<div style="margin-top:12px;font-size:13px;color:#ff453a">• Verifica ANTHROPIC_API_KEY en Vercel<br>• Asegúrate de tener saldo en Anthropic<br>• Revisa tu conexión a internet</div>'+
+    '</div>'+
+    '<button onclick="go(\'report\')" style="width:100%;padding:15px;border-radius:16px;background:#1c1c1e;border:1px solid #3a3a3c;color:#f2f2f7;font-size:15px;cursor:pointer;font-family:inherit">← Intentar de nuevo</button>';
+}
+
+function renderResult(r){
+  var t=PT[r.tipo]||PT.otro;
+  var tel=r.telefono||t.tel;
+  var ent=r.entidad||t.ent;
+  var urg=r.urgencia||t.u;
+  var steps=(r.pasos||[]).map(function(p,i){return'<div class="step"><span class="sn">'+(i+1)+'</span><span>'+p+'</span></div>'}).join('');
+  var avoid=(r.evitar||[]).map(function(e){return'<div class="step"><span class="xn">✕</span><span style="color:#ff6b6b">'+e+'</span></div>'}).join('');
+  document.getElementById('rbody').innerHTML=
+    '<div class="card" style="text-align:center;padding:24px 14px">'+
+      '<div style="font-size:60px;margin-bottom:12px">'+(r.emoji||t.e)+'</div>'+
+      '<div style="font-size:22px;font-weight:800;color:#f2f2f7;margin-bottom:10px">'+(r.nombre||t.n)+'</div>'+
+      '<span style="padding:7px 18px;border-radius:20px;background:'+UB[urg]+';color:'+UC[urg]+';font-size:14px;font-weight:700">Urgencia '+urg+'</span>'+
+      (r.riesgoVida?'<div style="margin-top:14px;padding:12px;background:rgba(255,69,58,.12);border-radius:14px;font-size:14px;color:#ff453a;border:1px solid rgba(255,69,58,.3);font-weight:600">⚠️ RIESGO PARA LA VIDA — Evacuá el área inmediatamente</div>':'')+
+    '</div>'+
+    '<div class="card"><div class="lbl">Lo que veo en la foto</div><div style="font-size:15px;color:#e5e5ea;line-height:1.65">'+(r.descripcion||'')+'</div></div>'+
+    '<div style="background:rgba(48,209,88,.07);border-radius:18px;padding:16px;border:1px solid rgba(48,209,88,.25);margin-bottom:12px">'+
+      '<div class="lbl" style="color:#30d158">⚡ Acción Inmediata</div>'+
+      '<div style="font-size:16px;color:#f2f2f7;font-weight:700;line-height:1.5">'+(r.accionInmediata||'Llama a la entidad responsable')+'</div>'+
+    '</div>'+
+    '<div style="background:#1c1c1e;border-radius:18px;padding:14px;margin-bottom:12px">'+
+      '<div class="lbl">📞 Entidad Responsable en Cali</div>'+
+      '<div style="font-size:16px;font-weight:700;color:#f2f2f7;margin-bottom:4px">'+ent+'</div>'+
+      '<div style="font-size:24px;font-weight:800;color:#ffd60a;margin-bottom:14px">'+tel+'</div>'+
+      '<button class="call-btn" onclick="window.location.href=\'tel:'+tel.replace(/[-\s]/g,'')+'\'">📞 Llamar a '+ent+'</button>'+
+    '</div>'+
+    '<div class="card"><div class="lbl">Pasos a seguir</div>'+steps+'</div>'+
+    '<div style="background:rgba(255,69,58,.05);border-radius:18px;padding:16px;border:1px solid rgba(255,69,58,.15);margin-bottom:12px">'+
+      '<div class="lbl" style="color:#ff453a">🚫 Qué NO hacer</div>'+avoid+
+    '</div>'+
+    '<button onclick="addToMap()" style="width:100%;padding:16px;border-radius:18px;background:#1c1c1e;border:1px solid #3a3a3c;color:#8e8e93;font-size:15px;cursor:pointer;font-family:inherit">📍 Agregar al Mapa de Cali</button>';
+}
+
+function addToMap(){
+  if(!aiRes)return;
+  var off=[(Math.random()-.5)*.04,(Math.random()-.5)*.04];
+  reps.push({id:reps.length+1,lat:3.4516+off[0],lng:-76.5320+off[1],type:aiRes.tipo||'otro',addr:'Tu reporte · Cali',time:'Ahora mismo'});
+  if(mapInst)placeMarkers();
+  updateStats();
+  showToast('✅ ¡Reporte agregado al mapa!');
+  setTimeout(function(){go('map')},1400);
+}
+
+function renderRec(){
+  document.getElementById('rec').innerHTML=reps.slice(-5).reverse().map(function(r){
+    var t=PT[r.type]||PT.otro;
+    return'<div class="rrow"><span style="font-size:22px;width:28px;text-align:center">'+t.e+'</span>'+
+      '<div style="flex:1;padding:0 10px"><div style="font-size:14px;font-weight:600;color:#f2f2f7">'+t.n+'</div>'+
+      '<div style="font-size:12px;color:#636366;margin-top:2px">'+r.addr+'</div></div>'+
+      '<span style="font-size:11px;color:#636366;flex-shrink:0">'+r.time+'</span></div>';
+  }).join('');
+}
+
+function updateStats(){
+  var urg=reps.filter(function(r){return(PT[r.type]||PT.otro).u==='ALTA'}).length;
+  document.getElementById('stt').textContent=reps.length;
+  document.getElementById('stu').textContent=urg;
+  document.getElementById('str').textContent=Math.max(0,reps.length-urg-3);
+  document.getElementById('maplbl').textContent=reps.length+' problemas activos en Cali';
+}
+
+function renderChips(){
+  document.getElementById('chips').innerHTML=Object.values(PT).map(function(t){
+    return'<span class="chip">'+t.e+' '+t.n+'</span>';
+  }).join('');
+}
+
+renderRec();updateStats();renderChips();
+</script>
+</body>
+</html>
