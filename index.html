@@ -154,19 +154,19 @@ input[type=file]{display:none}
 
 <script>
 var PT={
-  arbol:      {e:'🌳',n:'Árbol Caído / Poda',     ent:'DAGMA',                    tel:'880-5050', u:'MEDIA'},
-  incendio:   {e:'🔥',n:'Incendio',               ent:'Bomberos Cali',             tel:'119',      u:'ALTA'},
-  electrico:  {e:'⚡',n:'Falla Eléctrica',         ent:'EMCALI (Energía)',          tel:'116',      u:'ALTA'},
-  semaforo:   {e:'🚦',n:'Semáforo Dañado',         ent:'Secretaría de Movilidad',  tel:'444-2000', u:'BAJA'},
-  via:        {e:'🛣️',n:'Vía Dañada / Hueco',      ent:'Sec. Infraestructura',     tel:'883-7474', u:'MEDIA'},
-  inundacion: {e:'💧',n:'Inundación',              ent:'Bomberos Cali',             tel:'119',      u:'ALTA'},
-  puente:     {e:'🌉',n:'Puente en Riesgo',        ent:'Sec. Infraestructura',     tel:'883-7474', u:'ALTA'},
-  acueducto:  {e:'🚰',n:'Fuga de Agua / Alcantarilla', ent:'EMCALI (Acueducto)',  tel:'116',      u:'MEDIA'},
-  gas:        {e:'💨',n:'Fuga de Gas',             ent:'Gases de Occidente',        tel:'164',      u:'ALTA'},
-  construccion:{e:'🏗️',n:'Construcción Peligrosa', ent:'Planeación Municipal',     tel:'620-0000', u:'MEDIA'},
-  choque:     {e:'🚗',n:'Accidente de Tránsito',  ent:'Policía de Tránsito',       tel:'127',      u:'ALTA'},
-  cable:      {e:'🔌',n:'Cable Caído / Chispa',   ent:'EMCALI (Energía)',          tel:'116',      u:'ALTA'},
-  basura:     {e:'🗑️',n:'Acumulación de Basura',  ent:'Ciudad Limpia (EMSIRVA)',   tel:'880-5050', u:'BAJA'},
+  arbol:      {e:'🌳',n:'Árbol Caído / Poda',     ent:'DAGMA',                    tel:'313 780 7532', u:'MEDIA'},
+  incendio:   {e:'🔥',n:'Incendio',               ent:'Bomberos Cali',             tel:'602 882 1252',      u:'ALTA'},
+  electrico:  {e:'⚡',n:'Falla Eléctrica',         ent:'EMCALI (Energía)',          tel:'602 899 9999',      u:'ALTA'},
+  semaforo:   {e:'🚦',n:'Semáforo Dañado',         ent:'Secretaría de Movilidad',  tel:'602 369 0811', u:'BAJA'},
+  via:        {e:'🛣️',n:'Vía Dañada / Hueco',      ent:'Sec. Infraestructura',     tel:'602 885 1325', u:'MEDIA'},
+  inundacion: {e:'💧',n:'Inundación',              ent:'Bomberos Cali',             tel:'602 882 1252',      u:'ALTA'},
+  puente:     {e:'🌉',n:'Puente en Riesgo',        ent:'Sec. Infraestructura',     tel:'602 885 1325', u:'ALTA'},
+  acueducto:  {e:'🚰',n:'Fuga de Agua / Alcantarilla', ent:'EMCALI (Acueducto)',  tel:'602 899 9999',      u:'MEDIA'},
+  gas:        {e:'💨',n:'Fuga de Gas',             ent:'Gases de Occidente',        tel:'6024187333',      u:'ALTA'},
+  construccion:{e:'🏗️',n:'Construcción Peligrosa', ent:'Planeación Municipal',     tel:'602 885 1325', u:'MEDIA'},
+  choque:     {e:'🚗',n:'Accidente de Tránsito',  ent:'Policía de Tránsito',       tel:'602 369 0811',      u:'ALTA'},
+  cable:      {e:'🔌',n:'Cable Caído / Chispa',   ent:'EMCALI (Energía)',          tel:'602 899 9999',      u:'ALTA'},
+  basura:     {e:'🗑️',n:'Acumulación de Basura',  ent:'Ciudad Limpia (EMSIRVA)',   tel:'602 552 2010', u:'BAJA'},
   otro:       {e:'⚠️',n:'Otro Problema',           ent:'Línea de Emergencias',      tel:'123',      u:'MEDIA'}
 };
 var UC={ALTA:'#ff453a',MEDIA:'#ffd60a',BAJA:'#30d158'};
@@ -185,19 +185,19 @@ var mapInst=null,mkrs=[],imgData=null,imgMime=null,aiRes=null;
 var SYSTEM_PROMPT=`Eres un experto en infraestructura urbana de Cali, Colombia. Tu trabajo es analizar fotos de problemas de infraestructura y determinar exactamente qué es y a qué entidad de Cali hay que llamar.
 
 ANALIZA LA IMAGEN y clasifícala en uno de estos tipos:
-- arbol → árbol caído, rama caída, árbol inclinado, poda urgente → DAGMA: 880-5050
-- incendio → fuego, humo, llamas → Bomberos Cali: 119
-- electrico → poste dañado, transformador, cableado eléctrico roto → EMCALI Energía: 116
-- cable → cable caído al piso, cable tirando chispa, cable de luz suelto → EMCALI Energía: 116
-- semaforo → semáforo dañado, apagado, mal → Secretaría de Movilidad Cali: 444-2000
-- via → hueco en carretera, vía dañada, bache, pavimento roto → Secretaría de Infraestructura: 883-7474
-- inundacion → calle inundada, agua acumulada, desbordamiento → Bomberos Cali: 119
-- puente → puente dañado, grietas en puente, puente en riesgo → Secretaría de Infraestructura: 883-7474
-- acueducto → fuga de agua potable, tubería rota, alcantarilla rota → EMCALI Acueducto: 116
-- gas → olor a gas, fuga de gas, tubería de gas → Gases de Occidente: 164
-- construccion → construcción ilegal peligrosa, andamio mal puesto → Planeación Municipal: 620-0000
-- choque → accidente de tránsito, carros chocados → Policía de Tránsito: 127
-- basura → acumulación enorme de basura, escombros ilegales → EMSIRVA: 880-5050
+- arbol → árbol caído, rama caída, árbol inclinado, poda urgente → DAGMA: 313 780 7532
+- incendio → fuego, humo, llamas → Bomberos Cali: 602 882 1252
+- electrico → poste dañado, transformador, cableado eléctrico roto → EMCALI Energía: 602 899 9999
+- cable → cable caído al piso, cable tirando chispa, cable de luz suelto → EMCALI Energía: 602 899 9999
+- semaforo → semáforo dañado, apagado, mal → Secretaría de Movilidad Cali: 602 369 0811
+- via → hueco en carretera, vía dañada, bache, pavimento roto → Secretaría de Infraestructura: 602 885 1325
+- inundacion → calle inundada, agua acumulada, desbordamiento → Bomberos Cali: 602 882 1252
+- puente → puente dañado, grietas en puente, puente en riesgo → Secretaría de Infraestructura: 602 885 1325
+- acueducto → fuga de agua potable, tubería rota, alcantarilla rota → EMCALI Acueducto: 602 899 9999
+- gas → olor a gas, fuga de gas, tubería de gas → Gases de Occidente: 6024187333
+- construccion → construcción ilegal peligrosa, andamio mal puesto → Planeación Municipal: 602 885 1325
+- choque → accidente de tránsito, carros chocados → Policía de Tránsito: 602 369 0811
+- basura → acumulación enorme de basura, escombros ilegales → EMSIRVA: 602 552 2010
 - otro → cualquier otro problema urbano → Emergencias: 123
 
 Responde ÚNICAMENTE con este JSON, sin texto adicional, sin backticks, sin markdown:
