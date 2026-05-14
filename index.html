@@ -409,33 +409,9 @@ function doAnalyze(){
     renderResult(aiRes);
     go('result');
   }).catch(function(e){
-
-  console.error(e);
-
-  let msg = '⚠️ No fue posible analizar la imagen.';
-
-  if(e.message.includes('Request Entity Too Large')){
-
-    msg = '📸 La imagen es demasiado pesada. Intenta tomar la foto más cerca o usar una imagen más ligera.';
-
-  }else if(e.message.includes('Failed to fetch')){
-
-    msg = '🌐 Problema de conexión. Verifica internet e inténtalo nuevamente.';
-
-  }else if(e.message.includes('Unexpected token')){
-
-    msg = '⚠️ La IA no pudo procesar esta imagen correctamente. Intenta con otra foto más clara.';
-
-  }else if(e.message.includes('500')){
-
-    msg = '🤖 El servidor de IA está temporalmente ocupado. Intenta nuevamente en unos segundos.';
-
-  }
-
-  showToast(msg,'#ff453a');
-
-  go('result');
-});
+    renderError('Error de conexión: '+e.message+'. Verifica variables de entorno en Vercel y conexión a internet.');
+    go('result');
+  });
 }
 
 function renderError(msg){
