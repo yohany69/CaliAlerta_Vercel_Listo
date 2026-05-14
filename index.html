@@ -367,24 +367,43 @@ function markFixed(idx){
 
 /* ══ Foto y análisis ════════════════════════════════════════════════════ */
 function handleFile(inp){
-  var f=inp.files[0];if(!f)return;imgMime=f.type;
-  var rd=new FileReader();
-  rd.onload=function(ev){
-    imgData=ev.target.result.split(',')[1];
-    var img=new Image();
-    img.onload=function(){
-      var cv=document.createElement('canvas'),sc=Math.min(1,300/img.width);
-      cv.width=img.width*sc;cv.height=img.height*sc;
-      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-      pendingPhoto=cv.toDataURL('image/jpeg',0.65);
+  const f = inp.files[0];
+  if(!f) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e){
+    const img = new Image();
+
+    img.onload = function(){
+      const canvas = document.createElement('canvas');
+
+      const maxW = 1000;
+      const scale = maxW / img.width;
+
+      canvas.width = maxW;
+      canvas.height = img.height * scale;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      const compressed = canvas.toDataURL('image/jpeg', 0.7);
+
+      imgData = compressed.split(',')[1];
+      imgMime = 'image/jpeg';
+
+      document.getElementById('uph').style.display = 'none';
+      document.getElementById('upv').style.display = 'block';
+      document.getElementById('pimg').src = compressed;
+      document.getElementById('uz').style.borderColor = '#30d158';
+
+      checkReady();
     };
-    img.src=ev.target.result;
-    document.getElementById('uph').style.display='none';
-    document.getElementById('upv').style.display='block';
-    document.getElementById('pimg').src=ev.target.result;
-    document.getElementById('uz').style.borderColor='#4a8c3f';
-    var b=document.getElementById('abtn');b.disabled=false;b.style.opacity='1';
-  };rd.readAsDataURL(f);
+
+    img.src = e.target.result;
+  };
+
+  reader.readAsDataURL(f);
 }
 
 function doAnalyze(){
