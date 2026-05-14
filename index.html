@@ -367,97 +367,75 @@ function markFixed(idx){
 
 /* ══ Foto y análisis ════════════════════════════════════════════════════ */
 function handleFile(inp){
-  const f = inp.files[0];
-  if(!f) return;
-
-  const reader = new FileReader();
-
-  reader.onload = function(e){
-    const img = new Image();
-
-    img.onload = function(){
-      const canvas = document.createElement('canvas');
-
-      const maxW = 700;
-      const maxH = 700;
-
-      let width = img.width;
-      let height = img.height;
-
-      if(width > height && width > maxW){
-        height = Math.round(height * maxW / width);
-        width = maxW;
-      } else if(height > maxH){
-        width = Math.round(width * maxH / height);
-        height = maxH;
-      }
-
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-
-      const compressed = canvas.toDataURL('image/jpeg', 0.5);
-
-      imgData = compressed.split(',')[1];
-      imgMime = 'image/jpeg';
-
-      document.getElementById('uph').style.display='none';
-      document.getElementById('upv').style.display='block';
-      document.getElementById('pimg').src=compressed;
-      document.getElementById('uz').style.borderColor='#30d158';
-
-      checkReady();
+  var f=inp.files[0];if(!f)return;imgMime=f.type;
+  var rd=new FileReader();
+  rd.onload=function(ev){
+    imgData=ev.target.result.split(',')[1];
+    var img=new Image();
+    img.onload=function(){
+      var cv=document.createElement('canvas'),sc=Math.min(1,300/img.width);
+      cv.width=img.width*sc;cv.height=img.height*sc;
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      pendingPhoto=cv.toDataURL('image/jpeg',0.65);
     };
-
-    img.src = e.target.result;
-  };
-
-  reader.readAsDataURL(f);
+    img.src=ev.target.result;
+    document.getElementById('uph').style.display='none';
+    document.getElementById('upv').style.display='block';
+    document.getElementById('pimg').src=ev.target.result;
+    document.getElementById('uz').style.borderColor='#4a8c3f';
+    var b=document.getElementById('abtn');b.disabled=false;b.style.opacity='1';
+  };rd.readAsDataURL(f);
 }
 
+
+
 function doAnalyze(){
-  if(!imgData){
-    showToast('⚠️ Selecciona una imagen primero','#ff453a');
-    return;
-  }
-
+  if(!imgData){showToast('⚠️ Selecciona una imagen primero','#ff453a');return}
   go('loading');
-
   fetch('/api/analyze',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      image: imgData,
-      mime: imgMime
-    })
-  })
-  .then(async function(r){
-    const text = await r.text();
-
-    let d;
-    try{
-      d = JSON.parse(text);
-    }catch(e){
-      throw new Error(text.slice(0,180));
+    body:JSON.stringify({image:imgData,mime:imgMime})
+  }).then(function(r){
+    return r.json().then(function(d){return {ok:r.ok,data:d}});
+  }).then(function(resp){
+    var d=resp.data;
+    if(!resp.ok || d.error){
+      renderError(d.error || 'Error al analizar la imagen');
+      go('result');
+      return;
     }
-
-    if(!r.ok || d.error){
-      throw new Error(d.error || 'Error al analizar la imagen');
-    }
-
-    return d;
-  })
-  .then(function(d){
-    aiRes = d;
+    aiRes=d;
     renderResult(aiRes);
     go('result');
-  })
-  .catch(function(e){
-    renderError('Error: ' + e.message);
-    go('result');
-  });
+  }).catch(function(e){
+
+  console.error(e);
+
+  let msg = '⚠️ No fue posible analizar la imagen.';
+
+  if(e.message.includes('Request Entity Too Large')){
+
+    msg = '📸 La imagen es demasiado pesada. Intenta tomar la foto más cerca o usar una imagen más ligera.';
+
+  }else if(e.message.includes('Failed to fetch')){
+
+    msg = '🌐 Problema de conexión. Verifica internet e inténtalo nuevamente.';
+
+  }else if(e.message.includes('Unexpected token')){
+
+    msg = '⚠️ La IA no pudo procesar esta imagen correctamente. Intenta con otra foto más clara.';
+
+  }else if(e.message.includes('500')){
+
+    msg = '🤖 El servidor de IA está temporalmente ocupado. Intenta nuevamente en unos segundos.';
+
+  }
+
+  renderError(msg);
+
+  go('result');
+});
 }
 
 function renderError(msg){
