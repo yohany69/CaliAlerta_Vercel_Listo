@@ -378,24 +378,35 @@ function handleFile(inp){
     img.onload = function(){
       const canvas = document.createElement('canvas');
 
-      const maxW = 1000;
-      const scale = maxW / img.width;
+      const maxW = 700;
+      const maxH = 700;
 
-      canvas.width = maxW;
-      canvas.height = img.height * scale;
+      let width = img.width;
+      let height = img.height;
+
+      if(width > height && width > maxW){
+        height = Math.round(height * maxW / width);
+        width = maxW;
+      } else if(height > maxH){
+        width = Math.round(width * maxH / height);
+        height = maxH;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
 
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, width, height);
 
-      const compressed = canvas.toDataURL('image/jpeg', 0.7);
+      const compressed = canvas.toDataURL('image/jpeg', 0.5);
 
       imgData = compressed.split(',')[1];
       imgMime = 'image/jpeg';
 
-      document.getElementById('uph').style.display = 'none';
-      document.getElementById('upv').style.display = 'block';
-      document.getElementById('pimg').src = compressed;
-      document.getElementById('uz').style.borderColor = '#30d158';
+      document.getElementById('uph').style.display='none';
+      document.getElementById('upv').style.display='block';
+      document.getElementById('pimg').src=compressed;
+      document.getElementById('uz').style.borderColor='#30d158';
 
       checkReady();
     };
@@ -407,26 +418,44 @@ function handleFile(inp){
 }
 
 function doAnalyze(){
-  if(!imgData){showToast('⚠️ Selecciona una imagen primero','#ff453a');return}
+  if(!imgData){
+    showToast('⚠️ Selecciona una imagen primero','#ff453a');
+    return;
+  }
+
   go('loading');
+
   fetch('/api/analyze',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({image:imgData,mime:imgMime})
-  }).then(function(r){
-    return r.json().then(function(d){return {ok:r.ok,data:d}});
-  }).then(function(resp){
-    var d=resp.data;
-    if(!resp.ok || d.error){
-      renderError(d.error || 'Error al analizar la imagen');
-      go('result');
-      return;
+    body:JSON.stringify({
+      image: imgData,
+      mime: imgMime
+    })
+  })
+  .then(async function(r){
+    const text = await r.text();
+
+    let d;
+    try{
+      d = JSON.parse(text);
+    }catch(e){
+      throw new Error(text.slice(0,180));
     }
-    aiRes=d;
+
+    if(!r.ok || d.error){
+      throw new Error(d.error || 'Error al analizar la imagen');
+    }
+
+    return d;
+  })
+  .then(function(d){
+    aiRes = d;
     renderResult(aiRes);
     go('result');
-  }).catch(function(e){
-    renderError('Error de conexión: '+e.message+'. Verifica variables de entorno en Vercel y conexión a internet.');
+  })
+  .catch(function(e){
+    renderError('Error: ' + e.message);
     go('result');
   });
 }
